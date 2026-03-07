@@ -1,0 +1,13 @@
+fastapi
+uvicorn[standard]
+sqlalchemy[asyncio]
+asyncpg
+geoalchemy2
+psycopg2-binary
+faker
+python-dotenv
+python-jose[cryptography]
+passlib[bcrypt]
+python-multipart
+aiofiles
+pillow
