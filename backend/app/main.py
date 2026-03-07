@@ -19,22 +19,34 @@ app = FastAPI(
     description="Real Estate E-Commerce Platform with AI Document Processing & Intelligent Geotagging",
     version="1.0.0",
     lifespan=lifespan,
+    docs_url="/docs",
+    redoc_url="/redoc",
+    swagger_ui_parameters={"tryItOutEnabled": True},
 )
 
 # CORS — allow all origins in dev; restrict in production
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:5173",
+        "http://127.0.0.1:5173",
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+        "http://localhost:8000",
+        "http://127.0.0.1:8000",
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
+    expose_headers=["*"],
 )
 
 # Routers — import here to avoid circular import issues at module load
-from app.routers import auth, properties  # noqa: E402
+from app.routers import auth, properties, admin  # noqa: E402
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(properties.router, prefix="/api")
+app.include_router(admin.router, prefix="/api")
 
 # Static files for uploads (mounted after dir is guaranteed to exist)
 uploads_dir = os.path.abspath("uploads")

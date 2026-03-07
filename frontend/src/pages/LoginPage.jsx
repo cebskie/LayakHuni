@@ -14,6 +14,7 @@ export default function LoginPage() {
 
   const handleSubmit = async (e) => {
     e.preventDefault()
+    console.log('Submitting to:', '/auth/login', form)  // ← add this
     setLoading(true)
     try {
       const res = await api.post('/auth/login', form)

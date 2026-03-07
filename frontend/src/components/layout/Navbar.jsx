@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { MapPin, Heart, User, ShoppingCart, Menu, X, Search, ChevronDown, LogOut, Settings, PlusCircle, BarChart3 } from 'lucide-react'
+import { MapPin, Heart, User, ShoppingCart, Menu, X, Search, ChevronDown, LogOut, Settings, PlusCircle, BarChart3, Users } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar() {
@@ -64,9 +64,14 @@ export default function Navbar() {
                       </Link>
                     )}
                     {user?.user_role === 'Admin' && (
-                      <Link to="/data-explorer" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
-                        <BarChart3 size={14} /> Data Explorer
-                      </Link>
+                      <>
+                        <Link to="/data-explorer" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                          <BarChart3 size={14} /> Data Explorer
+                        </Link>
+                        <Link to="/admin/users" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                          <Users size={14} /> Manajemen Pengguna
+                        </Link>
+                      </>
                     )}
                     <button
                       onClick={() => { logout(); setUserMenuOpen(false); navigate('/') }}
@@ -162,7 +167,10 @@ export default function Navbar() {
                   <Link to="/add-property" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Tambah Properti</Link>
                 )}
                 {user?.user_role === 'Admin' && (
-                  <Link to="/data-explorer" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Data Explorer</Link>
+                  <>
+                    <Link to="/data-explorer" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Data Explorer</Link>
+                    <Link to="/admin/users" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Manajemen Pengguna</Link>
+                  </>
                 )}
                 <button onClick={() => { logout(); setMenuOpen(false); navigate('/') }} className="block w-full text-left px-4 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50">Keluar</button>
               </>

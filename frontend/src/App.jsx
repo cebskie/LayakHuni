@@ -15,6 +15,7 @@ import ProfilePage from './pages/ProfilePage'
 import AddPropertyPage from './pages/AddPropertyPage'
 import DataExplorerPage from './pages/DataExplorerPage'
 import MapPage from './pages/MapPage'
+import AdminUsersPage from './pages/AdminUsersPage'
 
 function ProtectedRoute({ children, roles }) {
   const { user, isAuthenticated } = useAuth()
@@ -48,6 +49,9 @@ function AppRoutes() {
           } />
           <Route path="/data-explorer" element={
             <ProtectedRoute roles={['Admin']}><DataExplorerPage /></ProtectedRoute>
+          } />
+          <Route path="/admin/users" element={
+            <ProtectedRoute roles={['Admin']}><AdminUsersPage /></ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>
