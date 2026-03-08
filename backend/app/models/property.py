@@ -1,5 +1,5 @@
 import enum
-from sqlalchemy import Column, String, Enum, DateTime, Text, Numeric, ForeignKey
+from sqlalchemy import Column, String, Enum, DateTime, Text, Numeric, ForeignKey, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 from app.core.database import Base
@@ -26,7 +26,7 @@ class Property(Base):
     property_status = Column(Enum(PropStatusEnum,  name="prop_status_enum",  values_callable=lambda x: [e.value for e in x]), nullable=False)
     sales_status    = Column(Enum(SalesStatusEnum, name="sales_status_enum", values_callable=lambda x: [e.value for e in x]), nullable=False)
     price         = Column(Numeric(15, 2), nullable=False)
-    created_at    = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, nullable=False, server_default=func.now())
     full_address  = Column(String(500), nullable=False)
 
     developer    = relationship("Developer",   back_populates="properties")

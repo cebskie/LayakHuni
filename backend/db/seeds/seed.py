@@ -25,9 +25,9 @@ fake = Faker('id_ID')
 STORAGE_SERVER = "storage.properti.id"
 STORAGE_BASE   = f"https://{STORAGE_SERVER}"
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-SEED_PASSWORD = "password123"
-HASHED_PASSWORD = pwd_context.hash(SEED_PASSWORD)
+# pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
+# SEED_PASSWORD = "password123"
+# HASHED_PASSWORD = pwd_context.hash(SEED_PASSWORD)
 
 # ── Lokasi kota-kota Indonesia (longitude, latitude) ──────────────────────────
 KOTA_LIST = [

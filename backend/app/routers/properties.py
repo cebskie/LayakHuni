@@ -399,6 +399,8 @@ async def create_property(
     if not dev:
         raise HTTPException(status_code=403, detail="Only developers can create properties")
 
+    from datetime import datetime  # add at top of file if not there
+
     prop = Property(
         prop_id=uuid.uuid4(),
         dev_id=dev.dev_id,
@@ -407,6 +409,7 @@ async def create_property(
         property_status=PropStatusEnum.Non_Valid,
         sales_status=SalesStatusEnum(body.sales_status.value),
         price=body.price,
+        created_at=datetime.utcnow(),  # ← add this line
         full_address=body.full_address,
     )
     db.add(prop)
@@ -414,3 +417,85 @@ async def create_property(
     await db.refresh(prop)
 
     return {"prop_id": str(prop.prop_id), "message": "Property created successfully"}
+
+
+@router.get("/nearby", response_model=list)
+async def get_nearby_properties(
+    lat: float = Query(..., description="Latitude of center point"),
+    lng: float = Query(..., description="Longitude of center point"),
+    radius_km: float = Query(5.0, description="Search radius in kilometers", ge=0.1, le=100),
+    sales_status: Optional[str] = Query(None),
+    limit: int = Query(20, ge=1, le=100),
+    db: AsyncSession = Depends(get_db),
+):
+    """
+    Find properties within radius_km of (lat, lng).
+    Uses PostGIS ST_DWithin for efficient spatial query.
+    """
+    status_filter = ""
+    params: dict = {
+        "lat": lat,
+        "lng": lng,
+        "radius_m": radius_km * 1000,
+        "limit": limit,
+    }
+
+    if sales_status:
+        status_filter = "AND p.sales_status = :sales_status"
+        params["sales_status"] = sales_status
+
+    query = text(f"""
+        SELECT
+            p.prop_id,
+            p.property_name,
+            p.price,
+            p.sales_status,
+            p.property_status,
+            p.full_address,
+            ph.filephoto_url as cover_photo,
+            ph.kabupatenkota,
+            ST_Y(ph.location::geometry) as lat,
+            ST_X(ph.location::geometry) as lng,
+            ST_Distance(
+                ph.location::geography,
+                ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
+            ) / 1000 as distance_km
+        FROM property p
+        JOIN LATERAL (
+            SELECT * FROM photo
+            WHERE prop_id = p.prop_id
+            AND ST_DWithin(
+                location::geography,
+                ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography,
+                :radius_m
+            )
+            ORDER BY ST_Distance(
+                location::geography,
+                ST_SetSRID(ST_MakePoint(:lng, :lat), 4326)::geography
+            )
+            LIMIT 1
+        ) ph ON true
+        WHERE 1=1 {status_filter}
+        ORDER BY distance_km ASC
+        LIMIT :limit
+    """)
+
+    result = await db.execute(query, params)
+    rows = result.fetchall()
+
+    return [
+        {
+            "prop_id": str(r.prop_id),
+            "property_name": r.property_name,
+            "price": float(r.price),
+            "sales_status": r.sales_status,
+            "property_status": r.property_status,
+            "full_address": r.full_address,
+            "cover_photo": r.cover_photo,
+            "kabupatenkota": r.kabupatenkota,
+            "lat": float(r.lat),
+            "lng": float(r.lng),
+            "distance_km": round(float(r.distance_km), 2),
+        }
+        for r in rows
+    ]
