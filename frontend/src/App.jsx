@@ -16,6 +16,7 @@ import AddPropertyPage from './pages/AddPropertyPage'
 import DataExplorerPage from './pages/DataExplorerPage'
 import MapPage from './pages/MapPage'
 import AdminUsersPage from './pages/AdminUsersPage'
+import DeveloperListingsPage from './pages/DeveloperListingsPage'
 
 function ProtectedRoute({ children, roles }) {
   const { user, isAuthenticated } = useAuth()
@@ -52,6 +53,9 @@ function AppRoutes() {
           } />
           <Route path="/admin/users" element={
             <ProtectedRoute roles={['Admin']}><AdminUsersPage /></ProtectedRoute>
+          } />
+          <Route path="/my-listings" element={
+            <ProtectedRoute roles={['Developer']}><DeveloperListingsPage /></ProtectedRoute>
           } />
           <Route path="*" element={<Navigate to="/" />} />
         </Routes>

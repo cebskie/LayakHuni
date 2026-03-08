@@ -1,6 +1,6 @@
 import { useState } from 'react'
 import { Link, useNavigate } from 'react-router-dom'
-import { Eye, EyeOff, UserPlus, Upload } from 'lucide-react'
+import { Eye, EyeOff, UserPlus } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import api from '../utils/api'
 import toast from 'react-hot-toast'
@@ -106,15 +106,6 @@ export default function RegisterPage() {
                       {label}
                     </button>
                   ))}
-                </div>
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Upload KTP</label>
-                <div className="border-2 border-dashed border-gray-200 rounded-xl p-5 text-center hover:border-[#1a3a6b] transition-colors cursor-pointer">
-                  <Upload size={20} className="mx-auto text-gray-400 mb-2" />
-                  <p className="text-xs text-gray-400">Klik atau seret file KTP Anda di sini</p>
-                  <p className="text-xs text-gray-300 mt-1">JPG, PNG, PDF (max 5MB)</p>
                 </div>
               </div>
 

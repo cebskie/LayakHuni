@@ -1,6 +1,6 @@
 import { useState, useRef, useEffect } from 'react'
 import { Link, useNavigate, useLocation } from 'react-router-dom'
-import { MapPin, Heart, User, ShoppingCart, Menu, X, Search, ChevronDown, LogOut, Settings, PlusCircle, BarChart3, Users } from 'lucide-react'
+import { MapPin, Heart, User, ShoppingCart, Menu, X, Search, ChevronDown, LogOut, Settings, PlusCircle, BarChart3, Users, Building2 } from 'lucide-react'
 import { useAuth } from '../../context/AuthContext'
 
 export default function Navbar() {
@@ -61,6 +61,11 @@ export default function Navbar() {
                     {user?.user_role === 'Developer' && (
                       <Link to="/add-property" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
                         <PlusCircle size={14} /> Tambah Properti
+                      </Link>
+                    )}
+                    {user?.user_role === 'Developer' && (
+                      <Link to="/my-listings" onClick={() => setUserMenuOpen(false)} className="flex items-center gap-2 px-4 py-2 text-sm hover:bg-gray-50">
+                        <Building2 size={14} /> Properti Saya
                       </Link>
                     )}
                     {user?.user_role === 'Admin' && (
@@ -165,6 +170,9 @@ export default function Navbar() {
                 <Link to="/profile" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Profil</Link>
                 {user?.user_role === 'Developer' && (
                   <Link to="/add-property" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Tambah Properti</Link>
+                )}
+                {user?.user_role === 'Developer' && (
+                  <Link to="/my-listings" className="block px-4 py-2 text-sm rounded-lg hover:bg-gray-50" onClick={() => setMenuOpen(false)}>Properti Saya</Link>
                 )}
                 {user?.user_role === 'Admin' && (
                   <>

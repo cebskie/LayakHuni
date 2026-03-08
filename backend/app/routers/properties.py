@@ -33,6 +33,23 @@ def _extract_coords(photo: Photo):
         pass
     return lat, lng
 
+@router.get("/me/dev-id", response_model=dict)
+async def get_my_dev_id(
+    current_user: Pengguna = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db),
+):
+    """Get current user's developer ID."""
+    from app.models.developer import Developer
+    
+    dev_result = await db.execute(
+        select(Developer).where(Developer.user_id == current_user.user_id)
+    )
+    dev = dev_result.scalar_one_or_none()
+    
+    if not dev:
+        raise HTTPException(status_code=404, detail="Developer profile not found")
+    
+    return {"dev_id": str(dev.dev_id)}
 
 @router.get("", response_model=dict)
 async def list_properties(
@@ -46,6 +63,7 @@ async def list_properties(
     lat: Optional[float] = Query(None),
     lng: Optional[float] = Query(None),
     radius_km: Optional[float] = Query(None),
+    dev_id: Optional[str] = Query(None),
     page: int = Query(1, ge=1),
     limit: int = Query(12, ge=1, le=100),
     db: AsyncSession = Depends(get_db),
@@ -93,6 +111,13 @@ async def list_properties(
             )
         )
 
+    if dev_id:
+        try:
+            did = uuid.UUID(dev_id)
+            filters.append(Property.dev_id == did)
+        except ValueError:
+            pass
+    
     # Spatial radius filter
     if lat is not None and lng is not None and radius_km is not None:
         point = ST_SetSRID(ST_MakePoint(lng, lat), 4326)
