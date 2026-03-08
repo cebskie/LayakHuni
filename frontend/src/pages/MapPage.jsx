@@ -6,6 +6,7 @@ import { MapPin, Navigation, X, Sliders, Loader } from 'lucide-react'
 import api from '../utils/api'
 import { formatRupiah } from '../utils/format'
 import toast from 'react-hot-toast'
+import 'leaflet.heat'
 
 delete L.Icon.Default.prototype._getIconUrl
 L.Icon.Default.mergeOptions({
@@ -49,6 +50,22 @@ function FlyTo({ center, zoom }) {
   return null
 }
 
+function HeatmapLayer({ pins }) {
+  const map = useMap()
+  useEffect(() => {
+    if (!pins.length) return
+    const points = pins.map(p => [p.lat, p.lng, 1])
+    const heat = L.heatLayer(points, {
+      radius: 35,
+      blur: 25,
+      maxZoom: 10,
+      gradient: { 0.2: '#1a3a6b', 0.5: '#c49a35', 0.8: 'orange', 1.0: 'red' }
+    }).addTo(map)
+    return () => map.removeLayer(heat)
+  }, [pins, map])
+  return null
+}
+
 export default function MapPage() {
   const [pins, setPins] = useState([])
   const [nearbyPins, setNearbyPins] = useState([])
@@ -60,6 +77,7 @@ export default function MapPage() {
   const [radius, setRadius] = useState(5)           // km
   const [flyTarget, setFlyTarget] = useState(null)
   const defaultCenter = [-6.2088, 106.8456]
+  const [showHeatmap, setShowHeatmap] = useState(false)
 
   // Load all pins
   useEffect(() => {
@@ -198,6 +216,15 @@ export default function MapPage() {
               <X size={12} /> Kembali ke Semua
             </button>
           )}
+
+                    {/* Heatmap toggle button */}
+          <button
+            onClick={() => setShowHeatmap(h => !h)}
+            className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-semibold transition-colors
+              ${showHeatmap ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-700 hover:bg-gray-200'}`}
+          >
+            🔥 {showHeatmap ? 'Heatmap ON' : 'Heatmap'}
+          </button>
         </div>
       </div>
 
@@ -244,6 +271,9 @@ export default function MapPage() {
             attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a>'
             url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
           />
+
+          {/* Heatmap layer */}
+          {showHeatmap && <HeatmapLayer pins={activePins} />}
 
           {flyTarget && <FlyTo center={flyTarget.center} zoom={flyTarget.zoom} />}
 

@@ -20,7 +20,10 @@
     "react-router-dom": "^6.23.1",
     "recharts": "^2.12.7",
     "tailwind": "^2.3.1",
-    "zustand": "^4.5.2"
+    "zustand": "^4.5.2",
+    "ag-grid-community": "^31.0.0",
+    "ag-grid-react": "^31.0.0",
+    "leaflet.heat": "^0.2.0"
   },
   "devDependencies": {
     "@types/react": "^18.3.3",

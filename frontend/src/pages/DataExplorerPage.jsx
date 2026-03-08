@@ -3,6 +3,9 @@ import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, Cart
 import { BarChart3, Download, RefreshCw, TrendingUp, Home, FileCheck, DollarSign } from 'lucide-react'
 import api from '../utils/api'
 import { formatRupiah } from '../utils/format'
+import { AgGridReact } from 'ag-grid-react'
+import 'ag-grid-community/styles/ag-grid.css'
+import 'ag-grid-community/styles/ag-theme-quartz.css'
 
 const COLORS = ['#1a3a6b', '#c49a35', '#10b981', '#f59e0b', '#8b5cf6', '#ef4444', '#06b6d4']
 
@@ -97,6 +100,7 @@ export default function DataExplorerPage() {
             { id: 'location', label: 'Analitik Lokasi' },
             { id: 'documents', label: 'Dokumen & Hak' },
             { id: 'table', label: 'Tabel Data' },
+            { id: 'pivot', label: 'Pivot Table' },  
           ].map(({ id, label }) => (
             <button
               key={id}
@@ -259,6 +263,55 @@ export default function DataExplorerPage() {
             </div>
           </div>
         )}
+        {activeTab === 'pivot' && (() => {
+          // AG-Grid hanya menampilkan (butuh license untuk otomatis dri AG-Grid), pivot dihitung manual
+          const statusList = [...new Set(properties.map(p => p.sales_status).filter(Boolean))]
+          const grouped = {}
+          properties.forEach(p => {
+            const key = p.kabupatenkota || 'Unknown'
+            if (!grouped[key]) grouped[key] = { kota: key, total: 0, _priceSum:0, _priceCount:0 }
+            grouped[key][p.sales_status] = (grouped[key][p.sales_status] || 0) + 1
+            grouped[key].total += 1
+            if (p.price){
+              grouped[key]._priceSum += p.price
+              grouped[key]._priceCount += 1
+            }
+          })
+          const rowData = Object.values(grouped)
+            .map(row => ({
+            ...row,
+            avg_price:row._priceCount > 0 ? Math.round(row._priceSum/row._priceCount) : 0
+          }))
+          .sort((a,b) => b.total - a.total)
+          const columnDefs = [
+            { field: 'kota', headerName: 'Kota', pinned: 'left', minWidth: 180 },
+            ...statusList.map(s => ({ field: s, headerName: s, width: 130 })),
+            {
+              field: 'avg_price',
+              headerName: 'Avg Harga',
+              width: 160,
+              valueFormatter: p=>formatRupiah(p.value)
+            },
+            { field: 'total', headerName: 'Total', width: 100, pinned: 'right' },
+          ]
+
+          return (
+            <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden">
+              <div className="px-6 py-4 border-b">
+                <h3 className="font-display font-semibold text-[#1a3a6b]">
+                  Pivot Table — Properti per Kota × Status Penjualan
+                </h3>
+              </div>
+              <div className="ag-theme-quartz" style={{ height: 500 }}>
+                <AgGridReact
+                  rowData={rowData}
+                  columnDefs={columnDefs}
+                  defaultColDef={{ sortable: true, filter: true, resizable: true }}
+                />
+              </div>
+            </div>
+          )
+        })()}
       </div>
     </div>
   )
