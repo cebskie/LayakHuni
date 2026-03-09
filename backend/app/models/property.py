@@ -34,3 +34,4 @@ class Property(Base):
     denahs       = relationship("Denah",       back_populates="property")
     pbgs         = relationship("PBG",         back_populates="property")
     certificates = relationship("Certificate", back_populates="property")
+    ocr_validations = relationship("OcrCrossValidation", back_populates="property")
