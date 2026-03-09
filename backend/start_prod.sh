@@ -2,9 +2,25 @@
 set -e
 
 echo "Running migrations..."
-psql ${DATABASE_URL/asyncpg/} -f db/migrations/1_init.sql
-psql ${DATABASE_URL/asyncpg/} -f db/migrations/2_triggers.sql  
-psql ${DATABASE_URL/asyncpg/} -f db/migrations/3_ocr_fields.sql
+python -c "
+import asyncio
+import os
+from sqlalchemy.ext.asyncio import create_async_engine
+from sqlalchemy import text
+
+async def migrate():
+    engine = create_async_engine(os.environ['DATABASE_URL'])
+    async with engine.begin() as conn:
+        with open('db/migrations/1_init.sql') as f:
+            await conn.execute(text(f.read()))
+        with open('db/migrations/2_triggers.sql') as f:
+            await conn.execute(text(f.read()))
+        with open('db/migrations/3_ocr_fields.sql') as f:
+            await conn.execute(text(f.read()))
+    await engine.dispose()
+
+asyncio.run(migrate())
+"
 
 echo "Running seed..."
 python -m db.seeds.seed
