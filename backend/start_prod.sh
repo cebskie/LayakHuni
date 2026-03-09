@@ -10,13 +10,12 @@ from sqlalchemy import text
 
 async def migrate():
     engine = create_async_engine(os.environ['DATABASE_URL'])
-    async with engine.begin() as conn:
-        with open('db/migrations/1_init.sql') as f:
-            await conn.execute(text(f.read()))
-        with open('db/migrations/2_triggers.sql') as f:
-            await conn.execute(text(f.read()))
-        with open('db/migrations/3_ocr_fields.sql') as f:
-            await conn.execute(text(f.read()))
+    for f in ['db/migrations/1_init.sql','db/migrations/2_triggers.sql','db/migrations/3_ocr_fields.sql']:
+        with open(f) as file:
+            sql = file.read()
+        async with engine.connect() as conn:
+            await conn.execute(text(sql))
+            await conn.commit()
     await engine.dispose()
 
 asyncio.run(migrate())
