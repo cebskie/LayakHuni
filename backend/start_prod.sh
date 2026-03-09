@@ -5,18 +5,17 @@ echo "Running migrations..."
 python -c "
 import asyncio
 import os
-from sqlalchemy.ext.asyncio import create_async_engine
-from sqlalchemy import text
+import asyncpg
 
 async def migrate():
-    engine = create_async_engine(os.environ['DATABASE_URL'])
-    for f in ['db/migrations/1_init.sql','db/migrations/2_triggers.sql','db/migrations/3_ocr_fields.sql']:
+    url = os.environ['DATABASE_URL'].replace('postgresql+asyncpg://', 'postgresql://')
+    conn = await asyncpg.connect(url)
+    for f in ['db/migrations/1_init.sql', 'db/migrations/2_triggers.sql', 'db/migrations/3_ocr_fields.sql']:
         with open(f) as file:
             sql = file.read()
-        async with engine.connect() as conn:
-            await conn.execute(text(sql))
-            await conn.commit()
-    await engine.dispose()
+        await conn.execute(sql)
+        print(f'✅ {f} done')
+    await conn.close()
 
 asyncio.run(migrate())
 "
