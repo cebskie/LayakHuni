@@ -20,6 +20,7 @@ from app.models import Pengguna, Customer, Developer, Property, Photo, Denah, PB
 from app.models.pengguna import UserRoleEnum
 from app.models.developer import VerifStatusEnum
 from app.models.property import PropStatusEnum, SalesStatusEnum
+from app.models.ocr_cross_validation import OcrCrossValidation
 
 fake = Faker('id_ID')
 STORAGE_SERVER = "storage.properti.id"
