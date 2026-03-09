@@ -23,7 +23,13 @@ layakhuni/
 │   │   │   └── denah.py        # Floor plan
 │   │   ├── routers/
 │   │   │   ├── auth.py         # Register, Login, Profile
-│   │   │   └── properties.py   # CRUD + geospatial queries
+│   │   │   ├── properties.py   # CRUD + geospatial queries
+│   │   │   ├── admin.py        # User management + dev verification
+│   │   │   └── upload.py       # File upload → MinIO + EXIF + geocoding
+│   │   ├── services/
+│   │   │   ├── storage.py      # MinIO S3-compatible storage
+│   │   │   ├── exif.py         # Pillow EXIF extraction (GPS + datetime)
+│   │   │   └── geocoding.py    # Nominatim reverse geocoding
 │   │   ├── schemas/            # Pydantic schemas
 │   │   └── main.py             # FastAPI app entry point
 │   ├── db/
@@ -32,81 +38,53 @@ layakhuni/
 │   │   │   └── 2_triggers.sql  # Auto-generate codes
 │   │   └── seeds/
 │   │       └── seed.py         # 12 properties + 15 kota Indonesia
-│   ├── Dockerfile
 │   ├── requirements.txt
 │   └── .env
 │
 ├── frontend/                   # React.js + Tailwind CSS
 │   ├── src/
 │   │   ├── components/
-│   │   │   ├── layout/
-│   │   │   │   ├── Navbar.jsx  # Responsive navbar + auth menu
-│   │   │   │   └── Footer.jsx
+│   │   │   ├── layout/Navbar.jsx
 │   │   │   └── property/
-│   │   │       ├── PropertyCard.jsx   # Card with doc badges
-│   │   │       └── FilterPanel.jsx    # Advanced filters
+│   │   │       ├── PropertyCard.jsx
+│   │   │       └── FilterPanel.jsx
 │   │   ├── pages/
-│   │   │   ├── LandingPage.jsx        # Hero + stats + listings
+│   │   │   ├── LandingPage.jsx
 │   │   │   ├── LoginPage.jsx
-│   │   │   ├── RegisterPage.jsx       # Role selection
+│   │   │   ├── RegisterPage.jsx
 │   │   │   ├── PropertiesPage.jsx     # Search + filter + grid
-│   │   │   ├── PropertyDetailPage.jsx # Full details + map
-│   │   │   ├── MapPage.jsx            # Leaflet map pins
+│   │   │   ├── PropertyDetailPage.jsx
+│   │   │   ├── MapPage.jsx            # Leaflet + Near Me radius search
 │   │   │   ├── DataExplorerPage.jsx   # Admin BI dashboard
+│   │   │   ├── AdminUsersPage.jsx     # User management (Admin)
 │   │   │   ├── ProfilePage.jsx
-│   │   │   ├── AddPropertyPage.jsx    # Developer form
+│   │   │   ├── AddPropertyPage.jsx    # Multi-step: info + foto + dokumen
 │   │   │   └── BookingPage.jsx
-│   │   ├── context/
-│   │   │   └── AuthContext.jsx        # Auth state
+│   │   ├── context/AuthContext.jsx
 │   │   └── utils/
-│   │       ├── api.js                 # Axios + interceptors
-│   │       └── format.js              # Rupiah, date formatting
-│   ├── Dockerfile
-│   ├── nginx.conf
+│   │       ├── api.js
+│   │       └── format.js
 │   └── package.json
 │
-└── docker-compose.yml          # Full stack orchestration
+└── docker-compose.yml
 ```
 
-## 🚀 Cara Menjalankan
+---
+
+## 🚀 Cara Menjalankan (Development Lokal)
 
 ### Prasyarat
-- Docker Desktop (direkomendasikan)
-- Node.js 20+ (untuk dev lokal)
-- Python 3.11+ (untuk dev lokal)
+
+- Python 3.11+
+- Node.js 20+
 - PostgreSQL 16 + PostGIS extension
+- Docker Desktop (untuk MinIO)
 
 ---
 
-### 🐳 Opsi 1: Docker Compose (Direkomendasikan)
+### 1. Setup PostgreSQL dengan PostGIS
 
 ```bash
-# Clone/buka folder proyek
-cd layakhuni
-
-# Jalankan semua service
-docker-compose up -d
-
-# Seed database dengan data dummy
-docker exec layakhuni_backend python -m db.seeds.seed
-
-# Akses aplikasi
-# Frontend: http://localhost:3000
-# Backend API: http://localhost:8000
-# API Docs: http://localhost:8000/docs
-```
-
----
-
-### 💻 Opsi 2: Development Lokal
-
-#### 1. Setup PostgreSQL dengan PostGIS
-
-```bash
-# Install PostgreSQL + PostGIS (macOS)
-brew install postgresql@16 postgis
-
-# Buat database
 psql -U postgres
 CREATE DATABASE real_estate;
 \c real_estate
@@ -114,25 +92,64 @@ CREATE EXTENSION postgis;
 CREATE EXTENSION pgcrypto;
 \q
 
-# Jalankan migrations
 psql -U postgres -d real_estate -f backend/db/migrations/1_init.sql
 psql -U postgres -d real_estate -f backend/db/migrations/2_triggers.sql
 ```
 
-#### 2. Backend (FastAPI)
+---
+
+### 2. Setup MinIO (Object Storage)
+
+MinIO digunakan untuk menyimpan foto properti, sertifikat, dan dokumen PBG.
+
+```bash
+# Jalankan MinIO via Docker
+docker run -d \
+  -p 9000:9000 \
+  -p 9001:9001 \
+  --name minio \
+  minio/minio server /data --console-address ":9001"
+```
+
+**Windows (cmd):**
+```cmd
+docker run -d -p 9000:9000 -p 9001:9001 --name minio minio/minio server /data --console-address ":9001"
+```
+
+Setelah MinIO berjalan:
+- **MinIO Console:** http://localhost:9001
+- **Login:** `minioadmin` / `minioadmin`
+- Buat bucket baru bernama `layakhuni` (atau biarkan backend membuatnya otomatis)
+
+> 💡 MinIO harus berjalan sebelum backend dijalankan. Cek dengan membuka http://localhost:9001.
+
+---
+
+### 3. Backend (FastAPI)
 
 ```bash
 cd backend
 
 # Buat virtual environment
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+
+# Aktivasi (Windows cmd)
+venv\Scripts\activate.bat
+
+# Aktivasi (macOS/Linux)
+source venv/bin/activate
 
 # Install dependencies
 pip install -r requirements.txt
 
-# Konfigurasi .env (sudah ada di repo)
-# DATABASE_URL=postgresql+asyncpg://postgres:AdminWU*#@localhost:5432/real_estate
+# Konfigurasi .env — pastikan berisi:
+# DATABASE_URL=postgresql+asyncpg://postgres:PASSWORD@localhost:5432/real_estate
+# MINIO_ENDPOINT=localhost:9000
+# MINIO_ACCESS_KEY=minioadmin
+# MINIO_SECRET_KEY=minioadmin
+# MINIO_BUCKET=layakhuni
+# MINIO_SECURE=false
+# MINIO_PUBLIC_URL=http://localhost:9000
 
 # Seed data dummy
 python -m db.seeds.seed
@@ -141,22 +158,22 @@ python -m db.seeds.seed
 uvicorn app.main:app --reload --port 8000
 ```
 
-Backend berjalan di: http://localhost:8000
-Swagger UI: http://localhost:8000/docs
+Backend: http://127.0.0.1:8000  
+Swagger UI: http://127.0.0.1:8000/docs
 
-#### 3. Frontend (React)
+---
+
+### 4. Frontend (React)
 
 ```bash
 cd frontend
-
-# Install dependencies
 npm install
-
-# Jalankan dev server
 npm run dev
 ```
 
-Frontend berjalan di: http://localhost:5173
+Frontend: http://localhost:5173
+
+> ⚠️ **Windows:** Gunakan Google Chrome, bukan Brave (Brave memblokir request XHR ke localhost).
 
 ---
 
@@ -164,11 +181,9 @@ Frontend berjalan di: http://localhost:5173
 
 | Role | Email | Password |
 |------|-------|----------|
-| Admin | admin@properti.id | hashed_password |
-| Customer | (random faker) | hashed_password |
-| Developer | dev1@griya.co.id | hashed_password |
-
-> ⚠️ Password seed adalah `hashed_password` (plaintext di seed), ganti dengan auth proper untuk produksi.
+| Admin | admin@properti.id | password123 |
+| Developer | dev1@griya.co.id | password123 |
+| Customer | (acak dari faker) | password123 |
 
 ---
 
@@ -176,13 +191,15 @@ Frontend berjalan di: http://localhost:5173
 
 | Layer | Teknologi |
 |-------|-----------|
-| Frontend | React.js 18, Tailwind CSS, React Router v6 |
+| Frontend | React 18, Tailwind CSS, React Router v6 |
 | Peta | Leaflet.js + React Leaflet |
 | Charts | Recharts |
-| Backend | FastAPI (Python 3.11), Async SQLAlchemy |
-| Database | PostgreSQL 16 + PostGIS 3.4 |
-| Auth | JWT (python-jose) + bcrypt (passlib) |
-| Deployment | Docker + Docker Compose |
+| Backend | FastAPI (Python 3.13), Async SQLAlchemy |
+| Database | PostgreSQL 16 + PostGIS |
+| Object Storage | MinIO (S3-compatible) |
+| Auth | JWT (python-jose) + bcrypt |
+| EXIF | Pillow |
+| Geocoding | Nominatim (OpenStreetMap, gratis) |
 
 ---
 
@@ -203,35 +220,50 @@ Frontend berjalan di: http://localhost:5173
 | GET | `/api/properties/{id}` | Detail properti |
 | POST | `/api/properties` | Buat properti baru (Developer) |
 | GET | `/api/properties/map-pins` | Koordinat untuk peta |
+| GET | `/api/properties/nearby` | Pencarian radius (lat, lng, radius_km) |
 | GET | `/api/properties/stats` | Statistik untuk Admin |
 
-### Filter Parameters (GET /api/properties)
-```
-search, min_price, max_price, sales_status, property_status,
-hak, kabupatenkota, lat, lng, radius_km, page, limit
-```
+### Upload
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| POST | `/api/upload/photo/{prop_id}` | Upload foto → EXIF → geocode → MinIO |
+| POST | `/api/upload/certificate/{prop_id}` | Upload sertifikat → MinIO |
+| POST | `/api/upload/pbg/{prop_id}` | Upload PBG → MinIO |
+| PATCH | `/api/upload/photo/{photo_id}/location` | Koreksi GPS manual |
+
+### Admin
+| Method | Endpoint | Deskripsi |
+|--------|----------|-----------|
+| GET | `/api/admin/users` | Semua user |
+| PATCH | `/api/admin/developers/{id}/verify` | Verifikasi developer |
+| PATCH | `/api/admin/developers/{id}/unverify` | Batalkan verifikasi |
 
 ---
 
 ## 📊 Fitur Utama
 
-### 1. AI Document Processing (UI Ready)
-- Upload PBG, E-Sertipikat, Denah
-- Confidence score indicators (hijau/kuning/merah)
-- Validasi field krusial (NIB, Nomor PBG)
-- Cross-field validation
+### 1. Upload & Object Storage (MinIO)
+- Foto properti disimpan di MinIO bucket `layakhuni/photos/`
+- Sertifikat disimpan di `layakhuni/certificates/`
+- PBG disimpan di `layakhuni/pbg/`
+- URL publik otomatis digenerate dan disimpan di database
 
 ### 2. Intelligent Geotagging
-- Koordinat PostGIS `GEOMETRY(Point, 4326)` per properti
+- Upload foto → EXIF diekstrak otomatis (GPS + timestamp)
+- Koordinat GPS → reverse geocode ke kota/kecamatan via Nominatim
+- PostGIS `GEOMETRY(Point, 4326)` per foto
 - Filter radius dengan `ST_DWithin`
-- Peta interaktif Leaflet dengan marker per status
-- Popup properti dengan detail lengkap
+- Peta interaktif dengan Near Me + radius circle
 
-### 3. Data Explorer Dashboard (Admin)
-- Overview charts (PieChart, BarChart)
-- Analitik per kota dan jenis hak
+### 3. AI Document Processing *(Sprint 2 — In Progress)*
+- File sertifikat & PBG sudah tersimpan di MinIO, siap diproses OCR
+- Data fields (NIB, jenis hak, nama pemilik, luas) akan diisi otomatis oleh AI OCR
+- Integrasi endpoint OCR akan ditambahkan oleh tim AI
+
+### 4. Data Explorer Dashboard (Admin)
+- Overview charts: status properti, distribusi hak, kota teratas
 - Tabel data dengan export CSV
-- Real-time dari database
+- Statistik real-time dari database
 
 ---
 
@@ -239,24 +271,20 @@ hak, kabupatenkota, lat, lng, radius_km, page, limit
 
 ```
 Pengguna ──┬── Customer
-           └── Developer ──── Property ──┬── Photo (PostGIS)
-                                          ├── Certificate
-                                          ├── PBG
+           └── Developer ──── Property ──┬── Photo (PostGIS point, EXIF, geocoding)
+                                          ├── Certificate (file URL, OCR fields)
+                                          ├── PBG (file URL, OCR fields)
                                           └── Denah
-```
-
-PostGIS spatial indexes:
-```sql
-CREATE INDEX idx_property_location ON Photo USING GIST (Location);
 ```
 
 ---
 
-## 📈 Roadmap (Sprint 2 Backlog)
+## 📈 Roadmap (Sprint 2)
 
-- [ ] AI OCR integration (Google Document AI / OpenAI Vision)
-- [ ] EXIF metadata extraction dari foto
-- [ ] Manual review fallback untuk confidence score rendah
-- [ ] Reverse geocoding Nominatim API
+- [ ] AI OCR untuk ekstrak data sertifikat & PBG (in progress — tim AI)
+- [ ] Manual review UI untuk field OCR confidence rendah
 - [ ] Export PDF/Excel dari Data Explorer
 - [ ] Heatmap properti di peta
+- [ ] Sistem booking / appointment
+- [ ] Notifikasi email verifikasi developer
+- [ ] Admin moderation properti (approve/reject)

@@ -43,13 +43,12 @@ app.add_middleware(
 
 # Routers — import here to avoid circular import issues at module load
 from app.routers import auth, properties, admin, upload  # noqa: E402
+from app.models.ocr_cross_validation import OcrCrossValidation  # noqa: F401
 
 app.include_router(auth.router, prefix="/api")
 app.include_router(properties.router, prefix="/api")
 app.include_router(admin.router, prefix="/api")
 app.include_router(upload.router, prefix="/api")
-app.include_router(upload.router, prefix="/api")
-print("DEBUG: upload router included, routes:", len(app.routes))  # ← add this
 
 # Static files for uploads (mounted after dir is guaranteed to exist)
 uploads_dir = os.path.abspath("uploads")

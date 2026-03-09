@@ -14,6 +14,8 @@ pydantic-settings
 python-multipart
 aiofiles
 pillow
-bcrypt==4.0.1
 httpx
 minio
+pytesseract
+pdf2image
+pypdf
