@@ -42,26 +42,15 @@ def get_minio_client() -> Minio:
         _ensure_bucket()
     return _client
 
-
 def _ensure_bucket():
-    """Create bucket if it doesn't exist and set public read policy."""
+    """Create bucket if it doesn't exist."""
     client = _client
     try:
         if not client.bucket_exists(MINIO_BUCKET):
             client.make_bucket(MINIO_BUCKET)
-            # Set public read policy so files are accessible via URL
-            policy = f'''{{
-                "Version": "2012-10-17",
-                "Statement": [{{
-                    "Effect": "Allow",
-                    "Principal": {{"AWS": ["*"]}},
-                    "Action": ["s3:GetObject"],
-                    "Resource": ["arn:aws:s3:::{MINIO_BUCKET}/*"]
-                }}]
-            }}'''
-            client.set_bucket_policy(MINIO_BUCKET, policy)
+            print(f"Bucket '{MINIO_BUCKET}' created")
     except S3Error as e:
-        print(f"MinIO bucket setup error: {e}")
+        print(f"Storage bucket setup error: {e}")
 
 
 def upload_file(
